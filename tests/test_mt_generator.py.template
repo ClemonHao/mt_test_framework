@@ -1,0 +1,84 @@
+import pytest
+import sys
+import os
+import ast
+import pandas as pd
+import asyncio
+import threading
+import time 
+
+sys.path.append("/opt/2_github/python_sdk_test/logic")
+sys.path.append("/opt/2_github/python_sdk_test/3rd/sinric_python/examples")
+from mt_generator import generate_metamorphic_test_sequence
+from sequence_runner import run_test_sequences
+from mt_cases import add_random_mt_to_test_sequences 
+from attribute_light import attribute_light
+from light import run_light_program
+
+sys.path.append("/opt/2_github/python_sdk_test/python_sdk_test/utils")
+from config_io import read_ini_file, set_initial_value
+
+file_path = "/tmp/test_sequences.csv"
+raw_output = attribute_light()
+follow_up_output = attribute_light()
+
+#1. Generate sequences (input)
+#2. Get raw output
+#3. Do MT
+#4. Get follow ups
+#5. compare
+
+def test_run_test_sequence_##INDEX##():
+    # start main program
+    thread = threading.Thread(target=run_light_program, daemon=True)
+    thread.start()
+    time.sleep(3)
+
+    data = pd.read_csv(file_path)
+
+    test_sequence = data.iloc[##INDEX##]["Seq"]
+    print(test_sequence)
+    test_sequence = ast.literal_eval(test_sequence)
+
+    set_initial_value()
+    run_test_sequences(test_sequence)
+    time.sleep(1)
+    raw_output.power = str(read_ini_file('power'))
+    raw_output.brightness = int(read_ini_file('brightness'))
+    raw_output.color_temperature = int(read_ini_file('color_temperature'))
+    raw_output.r = int(read_ini_file('r'))
+    raw_output.g = int(read_ini_file('g'))
+    raw_output.b = int(read_ini_file('b'))
+
+    #assert raw_output.brightness != -1 
+    #assert raw_output.color_temperature != -1 
+    #assert raw_output.r != -1
+    #assert raw_output.g != -1
+    #assert raw_output.b != -1
+
+    add_random_mt_to_test_sequences(test_sequence,
+         raw_output.r, raw_output.g, raw_output.b, raw_output.power, ##INDEX##)
+
+    set_initial_value()
+    run_test_sequences(test_sequence)
+    time.sleep(1)
+    follow_up_output.power = str(read_ini_file('power'))
+    follow_up_output.brightness = int(read_ini_file('brightness'))
+    follow_up_output.color_temperature = int(read_ini_file('color_temperature'))
+    follow_up_output.r = int(read_ini_file('r'))
+    follow_up_output.g = int(read_ini_file('g'))
+    follow_up_output.b = int(read_ini_file('b'))
+
+    #assert follow_up_output.brightness != -1 
+    #assert follow_up_output.color_temperature != -1 
+    #assert follow_up_output.r != -1
+    #assert follow_up_output.g != -1
+    #assert follow_up_output.b != -1
+
+    assert follow_up_output.power == raw_output.power
+    assert follow_up_output.brightness == raw_output.brightness
+    assert follow_up_output.color_temperature == raw_output.color_temperature
+    assert (follow_up_output.r == raw_output.r or follow_up_output.r == raw_output.r + 1 or follow_up_output.r == raw_output.r - 1)
+    assert (follow_up_output.g == raw_output.g or follow_up_output.g == raw_output.g + 1 or follow_up_output.g == raw_output.g - 1)
+    assert (follow_up_output.b == raw_output.b or follow_up_output.b == raw_output.b + 1 or follow_up_output.b == raw_output.b - 1)
+

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MutPy mutation report - mutation #891</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        
+        $('.line.number98').attr('title', 'ROR');
+        
+    }, 0);
+</script>
+
+</head>
+<body>
+    <div class="container">
+        
+<div class="page-header">
+    <h1>Mutation #891</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li>module - <code><module 'action_req' from '/opt/2_github/python_sdk_test/requests/action_req.py'></code></li>
+    <li><span class="label label-danger">survived</span></li>
+    
+    <li>duration - 373.227 s</li>
+    
+    
+    <li>tests run - 10</li>
+    
+</ul>
+
+<h3>Mutations</h3>
+<ul>
+    
+    <li>ROR - line 98</li>
+    
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; first-line: 1; highlight: [98]; toolbar: false;">import requests
+import json
+import time
+import configparser
+
+BASE_URL = 'https://api.sinric.pro/api/v1/devices/{device_id}/action'
+
+tv_id = '683e4256929fca430249ceed'
+device_id = '67457f7f13f98f1416f589e9'
+
+
+auth_api_url = 'https://api.sinric.pro/api/v1/auth'
+api_key = 'ecb143fb-2ecb-4471-9353-3f0ae0f4bec0'
+client_id = 'MacOS'
+
+CONFIG_FILE = '/tmp/token.ini'
+
+def update_ini_file_token(value):
+    config = configparser.ConfigParser()
+    
+    config.read(CONFIG_FILE)
+    config['request']['token'] = value
+    
+    with open(CONFIG_FILE, 'w') as configfile:
+        config.write(configfile)
+
+def read_ini_file_token():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    
+    
+    return config['request']['token']
+
+def update_token():
+    
+    payload = {}
+    
+    
+    headers = {\
+        'x-sinric-api-key': api_key, \
+        'Content-Type': 'application/x-www-form-urlencoded'}
+    
+    
+    try:
+        
+        response = requests.post(auth_api_url, headers=headers, data=payload)
+        
+        
+        if response.status_code == 200:
+            print('Authentication successful!')
+            response_data = response.json()
+            access_token = response_data.get('accessToken')
+            
+            if access_token:
+                print(f'Access Token: {access_token}')
+                update_ini_file_token(access_token)
+                return access_token
+            else:
+                print('Access token not found in the response.')
+                return None
+        else:
+            print(f'Failed to authenticate. Status code: {response.status_code}')
+            print('Response:', response.text)
+            return None
+    
+    except requests.exceptions.RequestException as e:
+        print(f'An error occurred: {e}')
+        return None
+
+def request_action(device_id, action, value, client_id='MacOS'):
+    
+    
+    url = BASE_URL.format(device_id=device_id)
+    
+    
+    query_params = {\
+        'clientId': client_id, \
+        'type': 'request', \
+        'createdAt': '1550493108338', \
+        'action': action, \
+        'value': json.dumps(value)}
+    
+    
+    token = read_ini_file_token()
+    if None == token:
+        token = update_token()
+    
+    headers = {\
+        'Authorization': f'Bearer {token}', \
+        'Content-Type': 'application/x-www-form-urlencoded'}
+    
+    
+    try:
+        
+        response = requests.get(url, headers=headers, params=query_params)
+        
+        
+        if response.status_code != 200:
+            print('Success:', response.json())
+        elif response.status_code == 401:
+            update_token()
+            response = requests.get(url, headers=headers, params=query_params)
+        else:
+            print(f'Request failed with status code {response.status_code}.')
+            print('Response:', response.text)
+    
+    except requests.exceptions.RequestException as e:
+        print(f'An error occurred: {e}')
+    
+    time.sleep(2)
+
+def light_action_req(action, value):
+    request_action(device_id, action, value)
+
+def tv_action_req(action, value):
+    request_action(tv_id, action, value)
+
+def light_action_brightness(lux):
+    print('light_action_brightness:', lux)
+    action = 'setBrightness'
+    action_str = {'brightness': lux}
+    light_action_req(action, action_str)
+
+def light_action_color(r, g, b):
+    print('light_action_color', r, g, b)
+    action = 'setColor'
+    action_str = {'color': {'r': r, 'g': g, 'b': b}}
+    light_action_req(action, action_str)
+
+def light_action_color_temperature(K):
+    print('light_action_color_temperature', K)
+    action = 'setColorTemperature'
+    action_str = {'colorTemperature': K}
+    light_action_req(action, action_str)
+
+def light_action_state(state):
+    print('light_action_state', state)
+    action = 'setPowerState'
+    if 1 == state:
+        action_str = {'state': 'On'}
+    else:
+        action_str = {'state': 'Off'}
+    
+    light_action_req(action, action_str)
+
+def tv_action_state(state):
+    print('tv_action_state', state)
+    action = 'setPowerState'
+    if 1 == state:
+        action_str = {'state': 'On'}
+    else:
+        action_str = {'state': 'Off'}
+    
+    tv_action_req(action, action_str)
+
+def tv_action_volume(volume):
+    print('tv_action_volume:', volume)
+    action = 'setVolume'
+    action_str = {'volume': volume}
+    tv_action_req(action, action_str)
+
+def tv_action_channel(channel_name):
+    print('tv_action_channel:', channel_name)
+    action = 'changeChannel'
+    action_str = {'channel': {'name': str(channel_name)}}
+    print('str:', action_str)
+    tv_action_req(action, action_str)</pre>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+import pytest
+import sys
+import os
+import ast
+import pandas as pd
+import asyncio
+import threading
+import time 
+
+sys.path.append("/opt/2_github/python_sdk_test/logic")
+sys.path.append("/opt/2_github/python_sdk_test/3rd/sinric_python/examples")
+from mt_generator import generate_metamorphic_test_sequence
+from sequence_runner import run_test_sequences
+from mt_cases import add_random_tv_mt_to_test_sequences 
+from attribute_tv import attribute_tv
+from tv import run_tv_program
+
+sys.path.append("/opt/2_github/python_sdk_test/python_sdk_test/utils")
+from config_io import read_ini_file, set_initial_value
+
+file_path = "/tmp/test_sequences.csv"
+raw_output = attribute_tv()
+follow_up_output = attribute_tv()
+
+#1. Generate sequences (input)
+#2. Get raw output
+#3. Do MT
+#4. Get follow ups
+#5. compare
+
+def test_run_test_sequence_##INDEX##():
+    # start main program
+    thread = threading.Thread(target=run_tv_program, daemon=True)
+    thread.start()
+    time.sleep(3)
+
+    data = pd.read_csv(file_path)
+
+    test_sequence = data.iloc[##INDEX##]["Seq"]
+    print(test_sequence)
+    test_sequence = ast.literal_eval(test_sequence)
+
+    set_initial_value()
+    run_test_sequences(test_sequence)
+    time.sleep(3)
+    raw_output.power = str(read_ini_file('power', 'tv'))
+    raw_output.volume = int(read_ini_file('volume', 'tv'))
+    raw_output.channel = int(read_ini_file('channel', 'tv'))
+
+    #assert raw_output.volume != -1 
+    #assert raw_output.channel != -1 
+
+    add_random_tv_mt_to_test_sequences(test_sequence,
+         raw_output.power, raw_output.channel, raw_output.volume, ##INDEX##)
+
+    set_initial_value()
+    run_test_sequences(test_sequence)
+    time.sleep(3)
+    follow_up_output.power = str(read_ini_file('power', 'tv'))
+    follow_up_output.volume = int(read_ini_file('volume', 'tv'))
+    follow_up_output.channel = int(read_ini_file('channel', 'tv'))
+
+    #assert follow_up_output.channel != -1 
+    #assert follow_up_output.volume != -1 
+
+    assert follow_up_output.power == raw_output.power
+    assert follow_up_output.volume == raw_output.volume
+    assert follow_up_output.channel == raw_output.channel
+

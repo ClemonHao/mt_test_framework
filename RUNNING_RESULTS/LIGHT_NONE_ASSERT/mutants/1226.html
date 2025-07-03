@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MutPy mutation report - mutation #1226</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://code.jquery.com/jquery.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushPython.js" type="text/javascript"></script>
+<script type="text/javascript">
+    SyntaxHighlighter.all();
+    window.setTimeout(function () {
+        
+        $('.line.number21').attr('title', 'SVD');
+        
+    }, 0);
+</script>
+
+</head>
+<body>
+    <div class="container">
+        
+<div class="page-header">
+    <h1>Mutation #1226</h1>
+</div>
+<h3>Details</h3>
+<ul>
+    <li>module - <code><module 'sinric._sinricpro_udp' from '/opt/homebrew/lib/python3.13/site-packages/sinric/_sinricpro_udp.py'></code></li>
+    <li><span class="label label-warning">incompetent</span></li>
+    
+    
+</ul>
+
+<h3>Mutations</h3>
+<ul>
+    
+    <li>SVD - line 21</li>
+    
+</ul>
+<h3>Mutant</h3>
+<pre class="brush: python; first-line: 1; highlight: [21]; toolbar: false;">'''
+ *  Copyright (c) 2019-2023 Sinric. All rights reserved.
+ *  Licensed under Creative Commons Attribution-Share Alike (CC BY-SA)
+ *
+ *  This file is part of the Sinric Pro (https://github.com/sinricpro/)
+'''
+
+import asyncio
+import socket
+from socket import AF_INET, SOCK_DGRAM
+from ._queues import queue
+import json
+from asyncio import sleep
+import struct
+
+
+class EchoServerProtocol(asyncio.DatagramProtocol):
+    def __init__(self, enablePrint, deviceIdArr=[]) -> None:
+        super().__init__()
+        self.enablePrint = enablePrint
+        deviceIdArr = deviceIdArr
+    
+    def connection_made(self, transport):
+        self.transport = transport
+    
+    def datagram_received(self, data, addr):
+        jsonData = json.loads(data.decode('ascii'))
+        if jsonData.get('payload', None).get('deviceId', None) in self.deviceIdArr:
+            queue.put([jsonData, 'udp_response', addr])
+        else:
+            print('Invalid Device id')
+        if self.enablePrint:
+            print(data)
+            print('UDP senderID : ', addr)
+
+
+class SinricProUdp:
+    def __init__(self, callbacks_udp, deviceIdArr, enable_trace=False, loop_delay=0.5, loopInstance=None):
+        self.callbacks = callbacks_udp
+        self.deviceIdArr = deviceIdArr
+        self.enablePrint = enable_trace
+        self.loopInstance = loopInstance
+        self.loop_delay = loop_delay if loop_delay > 0 else 0.5
+        self.udp_ip = '224.9.9.9'
+        self.udp_port = 3333
+        self.address = ('', self.udp_port)
+        self.sockServ = socket.socket(AF_INET, SOCK_DGRAM)
+        self.sockServ.bind(self.address)
+        self.sockServ.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, 
+            struct.pack('4sl', socket.inet_aton(self.udp_ip), socket.INADDR_ANY))
+    
+    def sendResponse(self, data, sender):
+        self.sockServ.sendto(data, sender)
+    
+    async def listen(self):
+        await self.loopInstance.create_datagram_endpoint(
+            (lambda: (EchoServerProtocol(
+            enablePrint=self.enablePrint, deviceIdArr=self.deviceIdArr))), 
+            local_addr=None, remote_addr=None, sock=self.sockServ)
+        while True:
+            await asyncio.sleep(self.loop_delay)</pre>
+
+    </div>
+</body>
+</html>
